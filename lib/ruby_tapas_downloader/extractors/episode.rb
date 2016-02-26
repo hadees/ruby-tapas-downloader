@@ -1,3 +1,5 @@
+require 'pry'
+
 # Extract an Episode from an Feed Item.
 class RubyTapasDownloader::Extractors::Episode < RubyTapasDownloader::Extractor
   # @param files_extractor [RubyTapasDownloader::Extractors::Files] the
@@ -14,7 +16,8 @@ class RubyTapasDownloader::Extractors::Episode < RubyTapasDownloader::Extractor
     title = CGI.unescapeHTML item.title
     link  = item.link
     files = @files_extractor.extract item.description
+    date = item.date.to_date
 
-    RubyTapasDownloader::Downloadables::Episode.new title, link, files
+    RubyTapasDownloader::Downloadables::Episode.new title, link, files, date
   end
 end

@@ -1,3 +1,5 @@
+require 'nokogiri'
+
 # An Ruby Tapas Episode.
 class RubyTapasDownloader::Downloadables::Episode <
                                               RubyTapasDownloader::Downloadable
@@ -12,10 +14,13 @@ class RubyTapasDownloader::Downloadables::Episode <
   #   for that episode.
   attr_reader :files
 
-  def initialize(title, link, files)
+  attr_reader :date
+
+  def initialize(title, link, files, date)
     @title = title
     @link  = link
     @files = files
+    @date  = date
   end
 
   # Clean title to be used in path names.
@@ -38,6 +43,7 @@ class RubyTapasDownloader::Downloadables::Episode <
         "`#{ title }' in `#{ episode_path }'..."
       FileUtils.mkdir_p episode_path
       files.each { |file| file.download episode_path, agent }
+      create_kodi_nfo!(episode_path)
     end
   end
 
@@ -56,4 +62,30 @@ class RubyTapasDownloader::Downloadables::Episode <
   def hash
     title.hash + link.hash + files.hash
   end
+
+  def create_kodi_nfo!(episode_path)
+    nfo_xml = Nokogiri::XML::Builder.new do |xml|
+      xml.send(:episodedetails) {
+        xml.send(:title, title)
+        xml.send(:season, date.year)
+        xml.send(:episode, episode_number)
+        xml.send(:aired, date.to_s)
+        xml.send(:credits, 'Avdi Grimm')
+      }
+    end
+    File.open(File.join(episode_path, nfo_file_name), 'w') { |file| file.write(nfo_xml.to_xml) }
+  end
+
+  def movie_file
+    files.find { |f| File.extname(f.name) == ".mp4" }
+  end
+
+  def episode_number
+    movie_file.name.to_i
+  end
+
+  def nfo_file_name
+    movie_file.name.sub '.mp4', '.nfo'
+  end
+
 end
